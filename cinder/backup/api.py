@@ -393,8 +393,15 @@ class API(base.Base):
 
         # Setting the status here rather than setting at start and unrolling
         # for each error condition, it should be a very small window
-        backup.host = self._get_available_backup_service_host(
-            backup.host, backup.availability_zone)
+
+        # ELASTX workaround to allow cross AZ restore of backups
+        if volume['availability_zone'] != backup.availability_zone:
+            backup.host = self._get_any_available_backup_service (
+                volume['availability_zone'])
+        else:
+            backup.host = self._get_available_backup_service_host(
+                backup.host, backup.availability_zone)
+
         backup.status = fields.BackupStatus.RESTORING
         backup.restore_volume_id = volume.id
         backup.save()
