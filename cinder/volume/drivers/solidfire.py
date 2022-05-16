@@ -2265,6 +2265,8 @@ class SolidFireDriver(san.SanISCSIDriver):
         """
         model_update = {}
 
+        LOG.info("Retyping volume %(vol)s to new type %(type)s",
+                  {'vol': volume.id, 'type': new_type})
         LOG.debug("Retyping volume %(vol)s to new type %(type)s",
                   {'vol': volume.id, 'type': new_type})
 
