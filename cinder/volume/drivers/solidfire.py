@@ -1063,11 +1063,6 @@ class SolidFireDriver(san.SanISCSIDriver):
 
     def _do_volume_create(self, sf_account, params, endpoint=None):
         sf_volume_name = params['name']
-        volumes_found = self._list_volumes_by_name(sf_volume_name,
-                                                   endpoint=endpoint)
-
-        if volumes_found:
-            raise SolidFireDuplicateVolumeNames(vol_name=sf_volume_name)
 
         sf_volid = None
         try:
