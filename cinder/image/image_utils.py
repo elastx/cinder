@@ -228,7 +228,8 @@ def _get_qemu_convert_cmd(src, dest, out_format, src_format=None,
                           out_subformat=None, cache_mode=None,
                           prefix=None, cipher_spec=None,
                           passphrase_file=None, compress=False,
-                          src_passphrase_file=None):
+                          src_passphrase_file=None,
+                          no_sparse=None):
 
     if src_passphrase_file is not None:
         if passphrase_file is None:
@@ -248,7 +249,8 @@ def _get_qemu_convert_cmd(src, dest, out_format, src_format=None,
             prefix=None,
             cipher_spec=cipher_spec,
             passphrase_file=passphrase_file,
-            src_passphrase_file=src_passphrase_file)
+            src_passphrase_file=src_passphrase_file,
+            no_sparse=no_sparse)
 
     if out_format == 'vhd':
         # qemu-img still uses the legacy vpc name
@@ -268,6 +270,9 @@ def _get_qemu_convert_cmd(src, dest, out_format, src_format=None,
 
     if out_subformat:
         cmd += ('-o', 'subformat=%s' % out_subformat)
+
+    if no_sparse:
+        cmd += ('-S', '0')
 
     # AMI images can be raw or qcow2 but qemu-img doesn't accept "ami" as
     # an image format, so we use automatic detection.
@@ -354,9 +359,11 @@ def _convert_image(prefix, source, dest, out_format,
                                                    dest,
                                                    'oflag=direct')):
         cache_mode = 'none'
+        no_sparse = True
     else:
         # use default
         cache_mode = None
+        no_sparse = None
 
     cmd = _get_qemu_convert_cmd(source, dest,
                                 out_format=out_format,
@@ -367,7 +374,8 @@ def _convert_image(prefix, source, dest, out_format,
                                 cipher_spec=cipher_spec,
                                 passphrase_file=passphrase_file,
                                 compress=compress,
-                                src_passphrase_file=src_passphrase_file)
+                                src_passphrase_file=src_passphrase_file,
+                                no_sparse=no_sparse)
 
     start_time = timeutils.utcnow()
 
@@ -1194,8 +1202,7 @@ class TemporaryImages(object):
         return self.temporary_images[user].get(image_id)
 
 
-def filter_out_reserved_namespaces_metadata(
-        metadata: Optional[dict[str, str]]) -> dict[str, str]:
+def filter_out_reserved_namespaces_metadata(metadata):
 
     reserved_name_spaces = GLANCE_RESERVED_NAMESPACES.copy()
     if CONF.reserved_image_namespaces:
