@@ -188,7 +188,8 @@ def qemu_img_supports_force_share():
 def _get_qemu_convert_cmd(src, dest, out_format, src_format=None,
                           out_subformat=None, cache_mode=None,
                           prefix=None, cipher_spec=None,
-                          passphrase_file=None, compress=False):
+                          passphrase_file=None, compress=False,
+                          no_sparse=None):
 
     if out_format == 'vhd':
         # qemu-img still uses the legacy vpc name
@@ -208,6 +209,9 @@ def _get_qemu_convert_cmd(src, dest, out_format, src_format=None,
 
     if out_subformat:
         cmd += ('-o', 'subformat=%s' % out_subformat)
+
+    if no_sparse:
+        cmd += ('-S', '0')
 
     # AMI images can be raw or qcow2 but qemu-img doesn't accept "ami" as
     # an image format, so we use automatic detection.
@@ -291,9 +295,11 @@ def _convert_image(prefix, source, dest, out_format,
                                                    dest,
                                                    'oflag=direct')):
         cache_mode = 'none'
+        no_sparse = True
     else:
         # use default
         cache_mode = None
+        no_sparse = None
 
     cmd = _get_qemu_convert_cmd(source, dest,
                                 out_format=out_format,
@@ -303,7 +309,8 @@ def _convert_image(prefix, source, dest, out_format,
                                 prefix=prefix,
                                 cipher_spec=cipher_spec,
                                 passphrase_file=passphrase_file,
-                                compress=compress)
+                                compress=compress,
+                                no_sparse=no_sparse)
 
     start_time = timeutils.utcnow()
 
