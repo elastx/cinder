@@ -377,6 +377,7 @@ class VolumeProtectionTests(test_base.CinderPolicyTests):
                        'terminate_connection')
     def test_admin_can_initialize_terminate_conn(self, mock_t, mock_i):
         admin_context = self.admin_context
+        admin_context.service_roles = ['service']
 
         volume = self._create_fake_volume(admin_context)
         path = '/v3/%(project_id)s/volumes/%(volume_id)s/action' % {
@@ -399,6 +400,7 @@ class VolumeProtectionTests(test_base.CinderPolicyTests):
                        'terminate_connection')
     def test_owner_can_initialize_terminate_conn(self, mock_t, mock_i):
         user_context = self.user_context
+        user_context.service_roles = ['service']
 
         volume = self._create_fake_volume(user_context)
         path = '/v3/%(project_id)s/volumes/%(volume_id)s/action' % {

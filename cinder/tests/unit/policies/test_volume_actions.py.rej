@@ -1,0 +1,27 @@
+diff a/cinder/tests/unit/policies/test_volume_actions.py b/cinder/tests/unit/policies/test_volume_actions.py	(rejected hunks)
+@@ -89,6 +89,9 @@ class VolumeActionsPolicyTest(base.BasePolicyTest):
+             self._initialize_connection)
+         self.api_path = '/v3/%s/volumes' % (self.project_id)
+         self.api_version = mv.BASE_VERSION
++        self.mock_is_service = self.patch(
++            'cinder.volume.api.API.is_service_request',
++            return_value=True)
+ 
+     def _initialize_connection(self, volume, connector):
+         return {'data': connector}
+@@ -946,6 +949,7 @@ class VolumeProtectionTests(test_base.CinderPolicyTests):
+         self.assertEqual(HTTPStatus.ACCEPTED, response.status_int)
+ 
+         body = {"os-detach": {}}
++        # Detach for user call succeeds because the volume has no attachments
+         response = self._get_request_response(admin_context, path, 'POST',
+                                               body=body)
+         self.assertEqual(HTTPStatus.ACCEPTED, response.status_int)
+@@ -966,6 +970,7 @@ class VolumeProtectionTests(test_base.CinderPolicyTests):
+                                               body=body)
+         self.assertEqual(HTTPStatus.ACCEPTED, response.status_int)
+ 
++        # Succeeds for a user call because there are no attachments
+         body = {"os-detach": {}}
+         response = self._get_request_response(user_context, path, 'POST',
+                                               body=body)
