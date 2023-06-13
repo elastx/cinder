@@ -1147,8 +1147,7 @@ class TemporaryImages(object):
         return self.temporary_images[user].get(image_id)
 
 
-def filter_out_reserved_namespaces_metadata(
-        metadata: Optional[dict[str, str]]) -> dict[str, str]:
+def filter_out_reserved_namespaces_metadata(metadata):
 
     reserved_name_spaces = GLANCE_RESERVED_NAMESPACES.copy()
     if CONF.reserved_image_namespaces:
