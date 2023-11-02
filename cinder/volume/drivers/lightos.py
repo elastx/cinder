@@ -39,7 +39,6 @@ from cinder.volume import driver
 
 LOG = logging.getLogger(__name__)
 ENABLE_TRACE = True
-LIGHTOS_DEFAULT_PROJECT_NAME = "default"
 
 urllib3.disable_warnings()
 
@@ -74,7 +73,10 @@ lightos_opts = [
     cfg.IntOpt('lightos_api_service_timeout',
                default=30,
                help='The default amount of time (in seconds) to wait for'
-               ' an API endpoint response.')
+               ' an API endpoint response.'),
+    cfg.StrOpt('lightos_default_project_name',
+               default="default",
+               help='The default lightos project name to use for volumes')
 ]
 
 CONF = cfg.CONF
@@ -487,12 +489,12 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             extra_specs = volume.volume_type.extra_specs
             project_name = extra_specs.get(
                 'lightos:project_name',
-                LIGHTOS_DEFAULT_PROJECT_NAME)
+                self.conf.lightos_default_project_name)
         except Exception:
             LOG.debug(
                 "LIGHTOS volume %s has no lightos:project_name",
                 volume)
-            project_name = LIGHTOS_DEFAULT_PROJECT_NAME
+            project_name = self.conf.lightos_default_project_name
 
         return project_name
 
@@ -559,7 +561,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         num_replicas = str(self.configuration.lightos_default_num_replicas)
 
         if not volume.volume_type:
-            return (compression, num_replicas, LIGHTOS_DEFAULT_PROJECT_NAME)
+            return (compression, num_replicas, self.conf.lightos_default_project_name)
 
         specs = getattr(volume.volume_type, 'extra_specs', {})
         compression = 'True' if specs.get('compression', None) \
@@ -567,7 +569,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         num_replicas = str(specs.get('lightos:num_replicas', num_replicas))
         project_name = specs.get(
             'lightos:project_name',
-            LIGHTOS_DEFAULT_PROJECT_NAME)
+            self.conf.lightos_default_project_name)
         return (compression, num_replicas, project_name)
 
     def _create_new_lightos_volume(self,
