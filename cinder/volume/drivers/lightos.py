@@ -39,7 +39,6 @@ from cinder.volume import driver
 
 LOG = logging.getLogger(__name__)
 ENABLE_TRACE = True
-LIGHTOS_DEFAULT_PROJECT_NAME = "default"
 
 urllib3.disable_warnings()
 
@@ -75,7 +74,10 @@ lightos_opts = [
     cfg.IntOpt('lightos_api_service_timeout',
                default=30,
                help='The default amount of time (in seconds) to wait for'
-               ' an API endpoint response.')
+               ' an API endpoint response.'),
+    cfg.StrOpt('lightos_default_project_name',
+               default="default",
+               help='The default lightos project name to use for volumes.')
 ]
 
 CONF = cfg.CONF
@@ -488,12 +490,12 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             extra_specs = volume.volume_type.extra_specs
             project_name = extra_specs.get(
                 'lightos:project_name',
-                LIGHTOS_DEFAULT_PROJECT_NAME)
+                self.configuration.lightos_default_project_name)
         except Exception:
             LOG.debug(
                 "LIGHTOS volume %s has no lightos:project_name",
                 volume)
-            project_name = LIGHTOS_DEFAULT_PROJECT_NAME
+            project_name = self.configuration.lightos_default_project_name
 
         return project_name
 
@@ -570,7 +572,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
 
         if not volume.volume_type:
             return (default_compression, num_replicas,
-                    LIGHTOS_DEFAULT_PROJECT_NAME)
+                    self.configuration.lightos_default_project_name)
 
         specs = getattr(volume.volume_type, 'extra_specs', {})
         type_compression = specs.get('compression', default_compression)
@@ -579,7 +581,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         num_replicas = str(specs.get('lightos:num_replicas', num_replicas))
         project_name = specs.get(
             'lightos:project_name',
-            LIGHTOS_DEFAULT_PROJECT_NAME)
+            self.configuration.lightos_default_project_name)
         return (compression, num_replicas, project_name)
 
     def _create_new_lightos_volume(self,
@@ -1424,6 +1426,13 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             raise exception.VolumeBackendAPIException(message=_(msg))
 
         props = self._get_connection_properties(project_name, volume)
+
+        # ELX additions, enable discard and 4k block size just as they have
+        # on the hypervisor
+        props['physical_block_size'] = "4096"
+        props['logical_block_size'] = "512"
+        #props['discard'] = True
+
         return {'driver_volume_type': ('lightos'), 'data': props}
 
     def terminate_connection(self, volume, connector, **kwargs):
