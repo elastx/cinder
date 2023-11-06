@@ -489,12 +489,12 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             extra_specs = volume.volume_type.extra_specs
             project_name = extra_specs.get(
                 'lightos:project_name',
-                self.conf.lightos_default_project_name)
+                self.configuration.lightos_default_project_name)
         except Exception:
             LOG.debug(
                 "LIGHTOS volume %s has no lightos:project_name",
                 volume)
-            project_name = self.conf.lightos_default_project_name
+            project_name = self.configuration.lightos_default_project_name
 
         return project_name
 
@@ -561,7 +561,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         num_replicas = str(self.configuration.lightos_default_num_replicas)
 
         if not volume.volume_type:
-            return (compression, num_replicas, self.conf.lightos_default_project_name)
+            return (compression, num_replicas, self.configuration.lightos_default_project_name)
 
         specs = getattr(volume.volume_type, 'extra_specs', {})
         compression = 'True' if specs.get('compression', None) \
@@ -569,7 +569,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         num_replicas = str(specs.get('lightos:num_replicas', num_replicas))
         project_name = specs.get(
             'lightos:project_name',
-            self.conf.lightos_default_project_name)
+            self.configuration.lightos_default_project_name)
         return (compression, num_replicas, project_name)
 
     def _create_new_lightos_volume(self,
