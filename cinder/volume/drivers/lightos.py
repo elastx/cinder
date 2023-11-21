@@ -76,7 +76,7 @@ lightos_opts = [
                ' an API endpoint response.'),
     cfg.StrOpt('lightos_default_project_name',
                default="default",
-               help='The default lightos project name to use for volumes')
+               help='The default lightos project name to use for volumes.')
 ]
 
 CONF = cfg.CONF
@@ -1012,6 +1012,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         server_properties['uuid'] = (
             self._get_lightos_uuid(project_name, volume))
         server_properties['nqn'] = self.cluster.subsystemNQN
+        server_properties['provider_geometry'] = ('%s %s' % (4096, 4096))
 
         return server_properties
 
