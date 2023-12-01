@@ -1415,6 +1415,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             raise exception.VolumeBackendAPIException(message=_(msg))
 
         props = self._get_connection_properties(project_name, volume)
+        props['discard'] = True
         props['hostnqn'] = hostnqn
         return {'driver_volume_type': ('lightos'), 'data': props}
 
