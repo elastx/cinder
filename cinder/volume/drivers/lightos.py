@@ -1012,7 +1012,6 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         server_properties['uuid'] = (
             self._get_lightos_uuid(project_name, volume))
         server_properties['nqn'] = self.cluster.subsystemNQN
-        server_properties['provider_geometry'] = ('%s %s' % (4096, 4096))
 
         return server_properties
 
@@ -1415,8 +1414,14 @@ class LightOSVolumeDriver(driver.VolumeDriver):
             raise exception.VolumeBackendAPIException(message=_(msg))
 
         props = self._get_connection_properties(project_name, volume)
-        props['discard'] = True
         props['hostnqn'] = hostnqn
+
+        # ELX additions, enable discard and 4k block size just as they have
+        # on the hypervisor
+        server_properties['physical_block_size'] = 4096
+        server_properties['logical_block_size'] = 4096
+        props['discard'] = True
+
         return {'driver_volume_type': ('lightos'), 'data': props}
 
     def terminate_connection(self, volume, connector, **kwargs):
