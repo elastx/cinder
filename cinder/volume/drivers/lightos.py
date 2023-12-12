@@ -1418,8 +1418,8 @@ class LightOSVolumeDriver(driver.VolumeDriver):
 
         # ELX additions, enable discard and 4k block size just as they have
         # on the hypervisor
-        props['physical_block_size'] = 4096
-        props['logical_block_size'] = 4096
+        props['physical_block_size'] = "4096"
+        props['logical_block_size'] = "4096"
         props['discard'] = True
 
         return {'driver_volume_type': ('lightos'), 'data': props}
