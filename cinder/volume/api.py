@@ -1746,11 +1746,15 @@ class API(base.Base):
                         'migration_policy': migration_policy,
                         'quota_reservations': reservations,
                         'old_reservations': old_reservations}
-
-        type_azs = volume_utils.extract_availability_zones_from_volume_type(
-            new_type)
-        if type_azs is not None:
-            request_spec['availability_zones'] = type_azs
+        
+        # Keep availability zone data on retype where it is specified otherwise do nothing
+        if migration_policy is not None and volume.availability_zone is not None:
+            request_spec['availability_zones'] = volume.availability_zone
+        else: 
+            type_azs = volume_utils.extract_availability_zones_from_volume_type(
+                new_type)
+            if type_azs is not None:
+                request_spec['availability_zones'] = type_azs
 
         self.scheduler_rpcapi.retype(context, volume,
                                      request_spec=request_spec,
