@@ -1420,7 +1420,7 @@ class LightOSVolumeDriver(driver.VolumeDriver):
         # on the hypervisor
         props['physical_block_size'] = "4096"
         props['logical_block_size'] = "512"
-        props['discard'] = True
+        #props['discard'] = True
 
         return {'driver_volume_type': ('lightos'), 'data': props}
 
