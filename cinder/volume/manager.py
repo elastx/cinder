@@ -3022,6 +3022,21 @@ class VolumeManager(manager.CleanableManager,
         # Call driver to try and change the type
         retype_model_update = None
 
+        # Enable in-place volume retype for supported configuration changes.
+        # Specifically we do volume retype of front-end qos consumer wihtout
+        # triggering the volume driver function as it is not involved in the
+        # type change
+        qos_changes = diff.get('qos_specs', {})
+        if qos_changes:
+            if 'consumer' in qos_changes:
+                old_consumer, new_consumer = qos_changes['consumer']
+                allowed_consumers = {None, 'front-end'}
+                # Only allow this is we change from one front-end to another
+                # front-end consumer
+                if (old_consumer in allowed_consumers and
+                        new_consumer in allowed_consumers):
+                    retyped = True
+
         # NOTE(jdg): Check to see if the destination host or cluster (depending
         # if it's the volume is in a clustered backend or not) is the same as
         # the current.  If it's not don't call the driver.retype method,
