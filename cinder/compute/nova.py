@@ -244,3 +244,20 @@ class API(base.Base):
         # Use microversion that includes attachment_id
         nova = novaclient(context, api_version='2.89')
         return nova.volumes.get_server_volume(server_id, volume_id)
+
+    def update_volume_qos(self, context, server_id, volume_id):
+        """Notify Nova that front-end QoS for an attached volume has changed.
+
+        Nova will retrieve the updated connection_info from Cinder and apply
+        the new iotune settings to the running libvirt domain.
+        """
+        api_version = '2.51'
+        events = [{'name': 'volume-qos-updated',
+                   'server_uuid': server_id,
+                   'tag': volume_id}]
+        result = self._send_events(context, events, api_version=api_version)
+        if not result:
+            LOG.warning('Failed to notify Nova about QoS update for '
+                        'volume %(volume_id)s on server %(server_id)s.',
+                        {'volume_id': volume_id, 'server_id': server_id})
+        return result

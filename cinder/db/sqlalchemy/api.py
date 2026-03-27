@@ -2972,7 +2972,26 @@ def volume_qos_allows_retype(new_vol_type):
                 (models.VolumeType.qos_specs_id ==
                  models.QualityOfServiceSpecs.specs_id),
                 models.QualityOfServiceSpecs.key == 'consumer',
-                models.QualityOfServiceSpecs.value != 'back-end'))))
+                models.QualityOfServiceSpecs.value != 'back-end'))),
+        # Or both volume types have front-end only QoS consumer; Nova can
+        # update the running instance via virDomainSetBlockIoTune().
+        and_(
+            sql.exists().where(and_(
+                ~models.VolumeTypes.deleted,
+                models.VolumeTypes.id == models.Volume.volume_type_id,
+                (models.VolumeTypes.qos_specs_id ==
+                 models.QualityOfServiceSpecs.specs_id),
+                ~models.QualityOfServiceSpecs.deleted,
+                models.QualityOfServiceSpecs.key == 'consumer',
+                models.QualityOfServiceSpecs.value == 'front-end')),
+            sql.exists().where(and_(
+                ~models.VolumeTypes.deleted,
+                models.VolumeTypes.id == new_vol_type,
+                (models.VolumeTypes.qos_specs_id ==
+                 models.QualityOfServiceSpecs.specs_id),
+                ~models.QualityOfServiceSpecs.deleted,
+                models.QualityOfServiceSpecs.key == 'consumer',
+                models.QualityOfServiceSpecs.value == 'front-end'))))
 
 
 def volume_has_other_project_snp_filter():

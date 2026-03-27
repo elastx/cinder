@@ -1912,9 +1912,9 @@ class API(base.Base):
                     'group_id': (None, ''),
                     'volume_type_id': db.Not(new_type_id)}
 
-        # We don't support changing QoS at the front-end yet for in-use volumes
-        # TODO(avishay): Call Nova to change QoS setting (libvirt has support
-        # - virDomainSetBlockIoTune() - Nova does not have support yet).
+        # For in-use volumes, front-end QoS changes are allowed when both the
+        # old and new volume types have a front-end consumer; Nova will update
+        # the running instance via virDomainSetBlockIoTune().
         filters = [db.volume_qos_allows_retype(new_type_id)]
 
         updates = {'status': 'retyping',
@@ -1924,8 +1924,8 @@ class API(base.Base):
             msg = _('Retype needs volume to be in available or in-use state, '
                     'not be part of an active migration or a consistency '
                     'group, requested type has to be different that the '
-                    'one from the volume, and for in-use volumes front-end '
-                    'qos specs cannot change.')
+                    'one from the volume, and for in-use volumes only '
+                    'front-end qos spec changes are supported.')
             LOG.error(msg)
             QUOTAS.rollback(context, reservations + old_reservations,
                             project_id=volume.project_id)

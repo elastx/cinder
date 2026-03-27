@@ -3129,6 +3129,11 @@ class VolumeManager(manager.CleanableManager,
                 snap.volume_type_id = new_type_id
                 snap.save()
 
+            # If the volume is in-use and front-end QoS changed, update each
+            # attached Nova instance so libvirt applies the new iotune settings.
+            if status_update['status'] == 'in-use' and diff.get('qos_specs'):
+                self._update_nova_for_qos_retype(context, volume, new_type_id)
+
         if old_reservations:
             QUOTAS.commit(context, old_reservations, project_id=project_id)
         if new_reservations:
@@ -3139,6 +3144,50 @@ class VolumeManager(manager.CleanableManager,
         self.publish_service_capabilities(context)
         LOG.info("Retype volume completed successfully.",
                  resource=volume)
+
+    def _update_nova_for_qos_retype(self, context, volume, new_type_id):
+        """Notify Nova to update libvirt iotune after a front-end QoS retype.
+
+        Updates the connection_info stored in each Cinder attachment with the
+        new QoS specs so that Nova can retrieve them via attachment_get, then
+        sends a volume-qos-updated external event to each attached instance.
+        """
+        res = volume_types.get_volume_type_qos_specs(new_type_id)
+        qos = res.get('qos_specs') or {}
+        consumer = qos.get('consumer')
+        if consumer not in ['front-end', 'both']:
+            return
+
+        specs = dict(qos.get('specs') or {})
+        # Resolve per-GB IOPS/bandwidth keys to absolute values
+        for per_gb_key in list(specs):
+            if per_gb_key.endswith('_per_gb'):
+                base_key = per_gb_key[:-len('_per_gb')]
+                specs[base_key] = int(specs.pop(per_gb_key)) * int(volume.size)
+
+        with volume.obj_as_admin():
+            attachments = volume.volume_attachment
+
+        nova_api = compute.API()
+        for attachment in attachments:
+            if not attachment.instance_uuid:
+                continue
+            try:
+                # Update connection_info in the Cinder attachment so Nova
+                # can retrieve the new QoS specs via attachment_get.
+                if attachment.connection_info is not None:
+                    conn_info = dict(attachment.connection_info)
+                    conn_info['qos_specs'] = specs
+                    attachment.connection_info = conn_info
+                    attachment.save()
+                nova_api.update_volume_qos(
+                    context, attachment.instance_uuid, volume.id)
+            except Exception:
+                LOG.exception(
+                    'Failed to notify Nova about QoS update for '
+                    'volume %(vol)s on instance %(inst)s.',
+                    {'vol': volume.id,
+                     'inst': attachment.instance_uuid})
 
     @staticmethod
     def _set_replication_status(diff, model_update: dict) -> None:
